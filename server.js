@@ -1,31 +1,79 @@
+// requires dependencies
 var express = require('express');
-var path = require('path');
 var bodyParser = require('body-parser');
-var methodOverride = require('method-override');
 var passport = require('passport');
-var BasicStrategy = require('passport-http').BasicStrategy;
-var CONFIG = require('./config');
+var session = require('express-session');
+var path = require('path');
+var methodOverride = require('method-override');
+var localStrategy = require('passport-local').Strategy;
 
+// requires other files
+var CONFIG = require('./config');
 var db = require('./models');
 
 var app = express();
 
-app.use(bodyParser.urlencoded({extended: false}));
-app.use(methodOverride('_method'));
-app.use(passport.initialize());
+app.set('view engine', 'jade');
+app.set('views', path.resolve(__dirname, 'views'));
 
-passport.use(new BasicStrategy(
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(session(CONFIG.SESSION));
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(methodOverride('_method'));
+
+// console logs if authenticated or not
+app.use(function (req, res, next) {
+  console.log(req.isAuthenticated());
+  next();
+});
+
+passport.use(new localStrategy(
   function (username, password, done) {
+    var isAuthenticated = authenticate(username, password);
     // example authentication strategy using
-    if ( !(username === CONFIG.USER.USERNAME && password === CONFIG.USER.PASSWORD) ) {
+    if (!isAuthenticated) {
       return done(null, false);
     }
     return done(null, CONFIG);
   }
 ));
 
-app.set('view engine', 'jade');
-app.set('views', path.resolve(__dirname, 'views'));
+passport.serializeUser(function (user, done) {
+  return done(null, {});
+});
+
+passport.deserializeUser(function (user, done) {
+  return done(null, user);
+});
+
+// get and post request for /login
+app.get('/login', function (req, res) {
+  res.render('login');
+});
+
+app.post('/login',
+  passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/login'
+  })
+);
+
+function authenticate (username, password) {
+  var CREDENTIALS = CONFIG.CREDENTIALS;
+  var USERNAME = CREDENTIALS.USERNAME;
+  var PASSWORD = CREDENTIALS.PASSWORD;
+
+  return (username === USERNAME &&
+          password === PASSWORD);
+}
+
+function isAuthenticated (req, res, next) {
+  if (!req.isAuthenticated()) {
+    return res.redirect('/login');
+  }
+  return next();
+}
 
 // to view a list of gallery photos
 app.get('/', function (req, res) {
@@ -38,7 +86,7 @@ app.get('/', function (req, res) {
 // to see a "new photo" form
 // now requires authentication from passport
 app.get('/gallery/new',
-  passport.authenticate('basic', { session : false }),
+  isAuthenticated,
   function (req, res) {
     res.render('newPhoto', {});
 });
@@ -65,7 +113,7 @@ app.post('/gallery/', function (req, res) {
 
 // // to see a form to edit a gallery photo identified by the :id
 app.get('/gallery/:id/edit',
-  passport.authenticate('basic', { session : false }),
+  isAuthenticated,
   function (req, res) {
     db.Gallery.find({
       where: {

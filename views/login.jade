@@ -1,0 +1,13 @@
+extends ./layout/layout.jade
+
+block title
+  h1 Login
+  body
+    form(method="POST" action="/login")
+      p Username
+      input(type="text" name="username")
+      br
+      p Password
+      input(type="password" name="password")
+      br
+      button(type="submit") Login
