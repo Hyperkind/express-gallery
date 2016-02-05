@@ -28,16 +28,24 @@ app.use(function (req, res, next) {
   next();
 });
 
-passport.use(new localStrategy(
+passport.use(new localStrategy (
   function (username, password, done) {
-    var isAuthenticated = authenticate(username, password);
-    // example authentication strategy using
-    if (!isAuthenticated) {
+    db.User.find({
+      where:{
+        username: username
+      }
+    })
+    .then(function (user) {
+      if (user.password !== password) {
+        return done(null, false1);
+      }
+      return done(null, user);
+    })
+    .catch(function (err) {
       return done(null, false);
-    }
-    return done(null, CONFIG);
-  }
-));
+    });
+  })
+);
 
 passport.serializeUser(function (user, done) {
   return done(null, {});
@@ -55,18 +63,10 @@ app.get('/login', function (req, res) {
 app.post('/login',
   passport.authenticate('local', {
     successRedirect: '/',
-    failureRedirect: '/login'
+    failureRedirect: '/login',
+    failureFlash: true
   })
 );
-
-function authenticate (username, password) {
-  var CREDENTIALS = CONFIG.CREDENTIALS;
-  var USERNAME = CREDENTIALS.USERNAME;
-  var PASSWORD = CREDENTIALS.PASSWORD;
-
-  return (username === USERNAME &&
-          password === PASSWORD);
-}
 
 // if user is not authenticated, redirects to login page,
 // if user is authenticated, allows to continue
