@@ -68,6 +68,8 @@ function authenticate (username, password) {
           password === PASSWORD);
 }
 
+// if user is not authenticated, redirects to login page,
+// if user is authenticated, allows to continue
 function isAuthenticated (req, res, next) {
   if (!req.isAuthenticated()) {
     return res.redirect('/login');
