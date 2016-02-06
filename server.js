@@ -6,6 +6,7 @@ var session = require('express-session');
 var path = require('path');
 var methodOverride = require('method-override');
 var localStrategy = require('passport-local').Strategy;
+var isAuthenticated = require('./middleware/isAuthenticated');
 
 // requires other files
 var CONFIG = require('./config');
@@ -28,6 +29,7 @@ app.use(function (req, res, next) {
   next();
 });
 
+// links loin page to users database and checks for correct login
 passport.use(new localStrategy (
   function (username, password, done) {
     db.User.find({
@@ -67,15 +69,6 @@ app.post('/login',
     failureFlash: true
   })
 );
-
-// if user is not authenticated, redirects to login page,
-// if user is authenticated, allows to continue
-function isAuthenticated (req, res, next) {
-  if (!req.isAuthenticated()) {
-    return res.redirect('/login');
-  }
-  return next();
-}
 
 // to view a list of gallery photos
 app.get('/', function (req, res) {
