@@ -1,12 +1,14 @@
 // requires dependencies
 var express = require('express');
 var bodyParser = require('body-parser');
+var morgan = require('morgan');
 var passport = require('passport');
 var session = require('express-session');
 var path = require('path');
 var methodOverride = require('method-override');
 var localStrategy = require('passport-local').Strategy;
-var isAuthenticated = require('./middleware/isAuthenticated');
+// var isAuthenticated = require('./middleware/isAuthenticated');
+var router = express.Router();
 
 // requires other files
 var CONFIG = require('./config');
@@ -22,12 +24,15 @@ app.use(session(CONFIG.SESSION));
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(methodOverride('_method'));
+app.use(morgan('dev'));
+// middleware to direct all routes beginning with /gallery to the required file
+app.use('/gallery', require('./routers/galleryRouter'));
 
 // console logs if authenticated or not
-app.use(function (req, res, next) {
-  console.log(req.isAuthenticated());
-  next();
-});
+// app.use(function (req, res, next) {
+//   console.log(req.isAuthenticated());
+//   next();
+// });
 
 // links loin page to users database and checks for correct login
 passport.use(new localStrategy (
@@ -62,11 +67,11 @@ app.get('/login', function (req, res) {
   res.render('login');
 });
 
+// upon successful login, redirects to /, if failure stays on login page
 app.post('/login',
   passport.authenticate('local', {
     successRedirect: '/',
     failureRedirect: '/login',
-    failureFlash: true
   })
 );
 
@@ -78,62 +83,23 @@ app.get('/', function (req, res) {
   });
 });
 
-// to see a "new photo" form
-// now requires authentication from passport
-app.get('/gallery/new',
-  isAuthenticated,
-  function (req, res) {
-    res.render('newPhoto', {});
-});
-
-// // to see a single gallery photo
-app.get('/gallery/:id', function (req, res) {
-  db.Gallery.find({
-    where: {
-      id: req.params.id
-    }
-  })
-  .then(function (results) {
-    res.render('single', {Galleries:results});
-  });
-});
-
-// to create a new gallery photo
-app.post('/gallery/', function (req, res) {
-  Gallery.create(req.body)
-    .then(function (result) {
-      res.redirect('/gallery/'+result.id);
-    });
-});
-
-// // to see a form to edit a gallery photo identified by the :id
-app.get('/gallery/:id/edit',
-  isAuthenticated,
-  function (req, res) {
-    db.Gallery.find({
-      where: {
-        id: req.params.id
-      }
-    })
-    .then(function (results) {
-      res.render('edit', {Galleries:results});
-    });
-});
-
-// // updates a single gallery photo identified by the :id
-// app.put('/gallery/:id', function (req, res) {
-
-// });
-
-// // to delete a single gallery photo identified by the :id
-// app.delete('/gallery/:id', function (req, res) {
-
-// });
-
 // logout request! Currently don't work T__T
 app.get('/logout', function (req, res) {
   req.logout();
   res.redirect('/');
+});
+
+app.use(function (err, req, res, next) {
+  res.status(404);
+  return res.send('What are you doing here?');
+});
+
+// Default catch all middleware if page not found
+app.use(function (err, req, res, next) {
+  if (err) {
+    res.status(500);
+    return res.send('Something bad happened...');
+  }
 });
 
 db.sequelize

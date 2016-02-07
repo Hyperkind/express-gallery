@@ -15,4 +15,8 @@ block content
     br
     input(type="text", name="description", value=description placeholder="Description")
     br
-    input(type="submit" value="Edit this image")
+    form(method="POST", action="/gallery/#{Galleries.id}?_method=PUT")
+      button(type="submit") Edit This Image
+    br
+    form(method="POST", action="/gallery/#{Galleries.id}?_method=DELETE")
+      button(type="submit") Delete Image
