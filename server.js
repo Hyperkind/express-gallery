@@ -89,12 +89,13 @@ app.get('/logout', function (req, res) {
   res.redirect('/');
 });
 
+// Catch-all route undefined handler
 app.use(function (err, req, res, next) {
   res.status(404);
   return res.send('What are you doing here?');
 });
 
-// Default catch all middleware if page not found
+// Default catch all middleware error handler
 app.use(function (err, req, res, next) {
   if (err) {
     res.status(500);
