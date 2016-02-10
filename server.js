@@ -1,26 +1,35 @@
 // requires dependencies
 var express = require('express');
-var bodyParser = require('body-parser');
-var morgan = require('morgan');
-var passport = require('passport');
-var session = require('express-session');
+var redis = require('redis');
 var path = require('path');
-var methodOverride = require('method-override');
+var bodyParser = require('body-parser');
+var passport = require('passport');
 var localStrategy = require('passport-local').Strategy;
-// var isAuthenticated = require('./middleware/isAuthenticated');
+var session = require('express-session');
+var RedisStore = require('connect-redis')(session);
+var morgan = require('morgan');
+var methodOverride = require('method-override');
+
+var app = express();
 var router = express.Router();
 
 // requires other files
 var CONFIG = require('./config');
 var db = require('./models');
 
-var app = express();
-
-app.set('view engine', 'jade');
 app.set('views', path.resolve(__dirname, 'views'));
+app.set('view engine', 'jade');
 
 app.use(bodyParser.urlencoded({extended: false}));
-app.use(session(CONFIG.SESSION));
+// Sessions
+app.use(session({
+  store: new RedisStore({
+    host: CONFIG.REDIS.HOST,
+    port: CONFIG.REDIS.PORT
+  }),
+  secret: CONFIG.SESSION.secret
+}));
+
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(methodOverride('_method'));
@@ -28,15 +37,12 @@ app.use(morgan('dev'));
 // middleware to direct all routes beginning with /gallery to the required file
 app.use('/gallery', require('./routers/galleryRouter'));
 
-// console logs if authenticated or not
-// app.use(function (req, res, next) {
-//   console.log(req.isAuthenticated());
-//   next();
-// });
-
 // links loin page to users database and checks for correct login
 passport.use(new localStrategy (
-  function (username, password, done) {
+  {
+    passReqToCallback: true
+  },
+  function (req, username, password, done) {
     db.User.find({
       where:{
         username: username
@@ -63,17 +69,17 @@ passport.deserializeUser(function (user, done) {
 });
 
 // get and post request for /login
-app.get('/login', function (req, res) {
-  res.render('login');
-});
-
 // upon successful login, redirects to /, if failure stays on login page
-app.post('/login',
-  passport.authenticate('local', {
-    successRedirect: '/',
-    failureRedirect: '/login',
+app.route('/login')
+  .get(function (req, res) {
+    res.render('login');
   })
-);
+  .post(
+    passport.authenticate('local', {
+      successRedirect: '/',
+      failureRedirect: '/login'
+    })
+  );
 
 // to view a list of gallery photos
 app.get('/', function (req, res) {
