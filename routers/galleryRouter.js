@@ -43,16 +43,30 @@ router.route('/:id')
   .put(
     isAuthenticated,
     function (req, res) {
-      Gallery.find({
-        where: {
-          id: parseInt(req.params.id)
-        }
-      })
-      .then(function (results) {
-        res.render('single', { Galleries:results });
-      });
-    }
-  )
+      var editPhoto = {
+        author: req.body.author,
+        link: req.body.link,
+        description: req.body.description
+      };
+
+      var query = {
+        where: { id: req.params.id},
+        returning: true
+      };
+
+      Gallery.update (editPhoto, query)
+        .then(function (gallery) {
+          res.render('single', { Galleries:results });
+        });
+      // Gallery.find({
+      //   where: {
+      //     id: parseInt(req.params.id)
+      //   }
+      // })
+      // .then(function (results) {
+      //   res.render('single', { Galleries:results });
+      // });
+    })
   // works
   .delete(
     isAuthenticated,

@@ -50,7 +50,7 @@ passport.use(new localStrategy (
     })
     .then(function (user) {
       if (user.password !== password) {
-        return done(null, false1);
+        return done(null, false);
       }
       return done(null, user);
     })

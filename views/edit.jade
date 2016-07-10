@@ -11,8 +11,8 @@ block content
   form(method="POST", action="/gallery")
     input(type="text", name="author", value=author placeholder="Author Name")
     br
-    input(type="text", name="link", value=link placeholder="Image URL Link")
-    br
+    //- input(type="text", name="link", value=link placeholder="Image URL Link")
+    //- br
     input(type="text", name="description", value=description placeholder="Description")
     br
     form(method="POST", action="/gallery/#{Galleries.id}?_method=PUT")
